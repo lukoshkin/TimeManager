@@ -16,5 +16,7 @@ def time_aware_text(text: str, *args: str) -> str:
     now = datetime.now()
     kwargs = {arg: f"{{{arg}}}" for arg in args}
     return text.format(
-        today=now.strftime("%Y-%m-%d"), time=now.strftime("%H:%M:%S"), **kwargs
+        today=now.strftime("%Y-%m-%d"),
+        time=now.strftime("%H:%M:%S"),
+        **kwargs,
     )

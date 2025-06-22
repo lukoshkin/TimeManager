@@ -42,13 +42,23 @@ timemanager = "src.main:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
-[tool.black]
+[tool.ruff]
+# General settings
 line-length = 79
-target-version = ["py310"]
+target-version = "py310"
+# Select and extend rules
+select = ["E", "F", "I", "W"]  # Error, Flake8, Isort, Warning
+extend-exclude = ["__pycache__", "*.egg_info"]
 
-[tool.isort]
-profile = "black"
-line_length = 79
+[tool.ruff.format]
+# Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# Import sorting settings
+[tool.ruff.lint]
+isort = { known-first-party = ["src"], force-single-line = false }
 
 [tool.mypy]
 python_version = "3.10"
