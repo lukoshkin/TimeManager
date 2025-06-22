@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.18.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "timemanager"
+version = "0.1.0"
+description = "A comprehensive time and calendar management application"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "lukoshkin" }]
+keywords = ["calendar", "time management", "telegram bot", "mcp"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+  "telethon>=1.40.0",
+  "litellm>=1.72",
+  "google-auth>=2.40.3",
+  "google-auth-oauthlib>=1.2.2",
+  "google-api-python-client>=2.171.0",
+  "pydantic>=2.11.5",
+  "pydantic-settings>=2.9.1",
+  "loguru>=0.7.3",
+  "tzlocal>=5.3.1",
+  "mcp>=1.9.3",
+  "mcp-use>=1.3.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/lukoshkin/TimeManager"
+"Bug Tracker" = "https://github.com/lukoshkin/TimeManager/issues"
+
+[project.scripts]
+timemanager = "src.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.black]
+line-length = 79
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
