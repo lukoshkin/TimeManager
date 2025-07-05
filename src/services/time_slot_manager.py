@@ -29,7 +29,6 @@ class RecurrenceFrequency(str, Enum):
 
         Raises:
             ValueError: If the value cannot be converted
-
         """
         value_lower = value.lower().strip()
 
@@ -99,7 +98,6 @@ class TimeSlotManager:
 
         Returns:
             The ID of the created event
-
         """
         # If start and end times are provided, create the event directly
         if request.start_time and request.end_time:

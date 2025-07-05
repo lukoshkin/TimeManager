@@ -30,6 +30,8 @@ dependencies = [
   "tzlocal>=5.3.1",
   "mcp>=1.9.3",
   "mcp-use>=1.3.0",
+  "sentence-transformers>=4.1.0",
+  "numpy>=2.3.1",
 ]
 
 [project.urls]
@@ -47,7 +49,7 @@ packages = ["src"]
 line-length = 79
 target-version = "py310"
 # Select and extend rules
-select = ["E", "F", "I", "W"]  # Error, Flake8, Isort, Warning
+select = ["E", "F", "I", "W"]                  # Error, Flake8, Isort, Warning
 extend-exclude = ["__pycache__", "*.egg_info"]
 
 [tool.ruff.format]

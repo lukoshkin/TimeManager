@@ -81,6 +81,10 @@ class UpdateIntent(BaseIntent):
         None,
         description="ID of the event to update",
     )
+    event_name: str | None = Field(
+        None,
+        description="Name or description of the event to update",
+    )
     summary: str | None = Field(None, description="New event title/summary")
     start_time: datetime.datetime | None = Field(
         None,
@@ -105,9 +109,10 @@ class UpdateIntent(BaseIntent):
             "example": {
                 "intent_type": "update",
                 "event_selection": 2,
+                "event_name": "Meeting with John",
                 "summary": "Updated Meeting Title",
                 "start_time": "2025-06-11T15:00:00",
-                "original_text": "Change the second event to tomorrow at 3pm",
+                "original_text": "Change the meeting with John to tomorrow at 3pm",
             },
         }
     )

@@ -8,6 +8,7 @@ from telethon import TelegramClient, events
 from telethon.events import NewMessage
 
 from src.config.settings import settings
+from src.services.event_semantic_search import EventSemanticSearch
 from src.services.google_calendar import CalendarEvent, GoogleCalendarService
 from src.services.intent_parser import (
     BaseIntent,
@@ -54,6 +55,9 @@ class TelegramBot:
         self.intent_parser = LLMIntentParser(
             api_key=settings.openai_api_key,
             model=settings.openai_model,
+        )
+        self.semantic_search = EventSemanticSearch(
+            model_name="all-MiniLM-L6-v2"
         )
 
         # Store user states
@@ -108,16 +112,28 @@ class TelegramBot:
 
     def _register_handlers(self) -> None:
         """Register event handlers for the bot."""
-        self.client.on(events.NewMessage(pattern="/start"))(self._start_handler)
-        self.client.on(events.NewMessage(pattern="/help"))(self._help_handler)
-        self.client.on(events.NewMessage(pattern="/schedule"))(self._schedule_handler)
-        self.client.on(events.NewMessage(pattern="/update"))(self._update_handler)
-        self.client.on(events.NewMessage(pattern="/delete"))(self._delete_handler)
-        self.client.on(events.NewMessage(pattern="/cancel"))(self._cancel_handler)
-        self.client.on(events.NewMessage(pattern="/freeslots"))(self._freeslots_handler)
-        self.client.on(events.NewMessage(func=lambda e: not e.text.startswith("/")))(
-            self._message_handler
+        self.client.on(events.NewMessage(pattern="/start"))(
+            self._start_handler
         )
+        self.client.on(events.NewMessage(pattern="/help"))(self._help_handler)
+        self.client.on(events.NewMessage(pattern="/schedule"))(
+            self._schedule_handler
+        )
+        self.client.on(events.NewMessage(pattern="/update"))(
+            self._update_handler
+        )
+        self.client.on(events.NewMessage(pattern="/delete"))(
+            self._delete_handler
+        )
+        self.client.on(events.NewMessage(pattern="/cancel"))(
+            self._cancel_handler
+        )
+        self.client.on(events.NewMessage(pattern="/freeslots"))(
+            self._freeslots_handler
+        )
+        self.client.on(
+            events.NewMessage(func=lambda e: not e.text.startswith("/"))
+        )(self._message_handler)
 
     async def _start_handler(self, event: NewMessage.Event) -> None:
         """Handle the /start command."""
@@ -203,11 +219,15 @@ class TelegramBot:
             events = self.calendar_service.get_events(now, end_date)
 
             if not events:
-                await event.respond("You don't have any upcoming events to update.")
+                await event.respond(
+                    "You don't have any upcoming events to update."
+                )
                 return
 
             # Format the events for selection
-            response = "📝 Select an event to update by replying with its number:\n\n"
+            response = (
+                "📝 Select an event to update by replying with its number:\n\n"
+            )
             for i, calendar_event in enumerate(events, 1):
                 response += self._format_event(calendar_event, i)
 
@@ -237,11 +257,15 @@ class TelegramBot:
             events = self.calendar_service.get_events(now, end_date)
 
             if not events:
-                await event.respond("You don't have any upcoming events to delete.")
+                await event.respond(
+                    "You don't have any upcoming events to delete."
+                )
                 return
 
             # Format the events for selection
-            response = "🗑️ Select an event to delete by replying with its number:\n\n"
+            response = (
+                "🗑️ Select an event to delete by replying with its number:\n\n"
+            )
             for i, calendar_event in enumerate(events, 1):
                 response += self._format_event(calendar_event, i)
 
@@ -266,7 +290,9 @@ class TelegramBot:
         # Reset user state
         self.user_states[sender.id] = {"state": "idle"}
 
-        await event.respond("Operation canceled. What would you like to do next?")
+        await event.respond(
+            "Operation canceled. What would you like to do next?"
+        )
 
     async def _freeslots_handler(self, event: NewMessage.Event) -> None:
         """Handle the /freeslots command."""
@@ -376,7 +402,9 @@ class TelegramBot:
                             "- Make it 90 minutes long"
                         )
                     else:
-                        await event.respond("Please select a valid event number.")
+                        await event.respond(
+                            "Please select a valid event number."
+                        )
 
                 except ValueError:
                     await event.respond("Please enter a valid number.")
@@ -413,7 +441,9 @@ class TelegramBot:
                                 "Sorry, I couldn't delete that event. Error: {exc}"
                             )
                     else:
-                        await event.respond("Please select a valid event number.")
+                        await event.respond(
+                            "Please select a valid event number."
+                        )
 
                 except ValueError:
                     await event.respond("Please enter a valid number.")
@@ -441,7 +471,9 @@ class TelegramBot:
                                     ).total_seconds() / 60
                                     selected_event.end_time = (
                                         selected_event.start_time
-                                        + datetime.timedelta(minutes=int(duration))
+                                        + datetime.timedelta(
+                                            minutes=int(duration)
+                                        )
                                     )
                             if intent.duration_minutes:
                                 selected_event.end_time = (
@@ -492,10 +524,16 @@ class TelegramBot:
                     duration_minutes = 60
 
                     # Try to extract parameters from the message
-                    if isinstance(intent, CreateIntent) and intent.duration_minutes:
+                    if (
+                        isinstance(intent, CreateIntent)
+                        and intent.duration_minutes
+                    ):
                         duration_minutes = intent.duration_minutes
 
-                    if isinstance(intent, ListIntent) and intent.time_range_days:
+                    if (
+                        isinstance(intent, ListIntent)
+                        and intent.time_range_days
+                    ):
                         days_ahead = intent.time_range_days
 
                     # Find free slots with updated parameters
@@ -532,7 +570,9 @@ class TelegramBot:
                         date_slots[date_str].append(time_str)
 
                     for date_str, times in date_slots.items():
-                        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                        date_obj = datetime.datetime.strptime(
+                            date_str, "%Y-%m-%d"
+                        )
                         formatted_date = date_obj.strftime("%A, %B %d")
                         response += f"{formatted_date}:\n"
 
@@ -568,12 +608,16 @@ class TelegramBot:
             intent = await self.intent_parser.parse_intent(message)
 
             # Log the intent type that was determined
-            logger.info(f"Handling message with intent type: {intent.intent_type}")
+            logger.info(
+                f"Handling message with intent type: {intent.intent_type}"
+            )
 
             if isinstance(intent, CreateIntent):
                 await self._handle_create_intent(event, intent)
             elif isinstance(intent, ListIntent):
                 await self._handle_list_intent(event, intent)
+            elif isinstance(intent, UpdateIntent):
+                await self._handle_update_intent(event, intent)
             elif isinstance(intent, FallbackIntent):
                 await self._handle_fallback_intent(event, intent)
             else:
@@ -597,7 +641,8 @@ class TelegramBot:
             # Create an event request
             request = EventRequest(
                 summary=intent.summary,
-                duration_minutes=intent.duration_minutes or 60,  # Default to 60 minutes
+                duration_minutes=intent.duration_minutes
+                or 60,  # Default to 60 minutes
                 description=intent.description,
                 location=intent.location,
                 recurrence=intent.recurrence,
@@ -631,7 +676,9 @@ class TelegramBot:
 
                 if created_event is not None:
                     response = "✅ Event created:\n\n"
-                    response += self._format_event(created_event, include_number=False)
+                    response += self._format_event(
+                        created_event, include_number=False
+                    )
                     await event.respond(response)
                 else:
                     await event.respond(f"✅ Event created: {intent.summary}")
@@ -679,9 +726,7 @@ class TelegramBot:
                 return
 
             # Format the events
-            response = (
-                f"📅 Your schedule from {start_date.date()} to {end_date.date()}:\n\n"
-            )
+            response = f"📅 Your schedule from {start_date.date()} to {end_date.date()}:\n\n"
             for i, calendar_event in enumerate(events, 1):
                 response += self._format_event(calendar_event, i)
 
@@ -693,6 +738,115 @@ class TelegramBot:
             logger.error(f"Error listing events: {exc}")
             await event.respond(
                 "Sorry, I couldn't retrieve your schedule. Please try again."
+            )
+
+    async def _handle_update_intent(
+        self, event: NewMessage.Event, intent: UpdateIntent
+    ) -> None:
+        """Handle an update intent by finding and updating a calendar event."""
+        sender = await event.get_sender()
+        user_id = sender.id
+
+        try:
+            # Get events for the next 30 days to search through
+            now = datetime.datetime.now()
+            end_date = now + datetime.timedelta(days=30)
+            events = self.calendar_service.get_events(now, end_date)
+
+            if not events:
+                await event.respond(
+                    "You don't have any upcoming events to update."
+                )
+                return
+
+            selected_event = None
+
+            # First check if an event index was specified
+            if (
+                intent.event_selection is not None
+                and 1 <= intent.event_selection <= len(events)
+            ):
+                selected_event = events[intent.event_selection - 1]
+                logger.info(
+                    f"Selected event by index: {selected_event.summary}"
+                )
+            # Then check if an event_id was provided
+            elif intent.event_id is not None:
+                selected_event = next(
+                    (e for e in events if e.event_id == intent.event_id), None
+                )
+                if selected_event:
+                    logger.info(
+                        f"Selected event by ID: {selected_event.summary}"
+                    )
+            # Finally, use semantic search to find by name if provided
+            elif intent.event_name is not None:
+                selected_event, similarity = (
+                    self.semantic_search.find_similar_event(
+                        intent.event_name, events
+                    )
+                )
+                if selected_event:
+                    logger.info(
+                        f"Selected event by semantic search: {selected_event.summary} "
+                        f"(similarity: {similarity:.2f})"
+                    )
+
+            if selected_event is None:
+                # No event found, ask user to select from list
+                response = "I couldn't find the event you mentioned. Please select one:"
+                for i, calendar_event in enumerate(events, 1):
+                    response += f"\n{i}. {calendar_event.summary}"
+                await event.respond(response)
+
+                # Update user state for event selection
+                self.user_states[user_id] = {
+                    "state": "selecting_event_to_update",
+                    "events": events,
+                    "intent": intent,  # Store the intent to apply updates later
+                }
+                return
+
+            # Update the selected event
+            if intent.summary:
+                selected_event.summary = intent.summary
+            if intent.start_time:
+                selected_event.start_time = intent.start_time
+                # Adjust end time to maintain duration if not specified
+                if not intent.duration_minutes:
+                    duration = (
+                        selected_event.end_time - selected_event.start_time
+                    ).total_seconds() / 60
+                    selected_event.end_time = (
+                        selected_event.start_time
+                        + datetime.timedelta(minutes=int(duration))
+                    )
+            if intent.duration_minutes:
+                selected_event.end_time = (
+                    selected_event.start_time
+                    + datetime.timedelta(minutes=intent.duration_minutes)
+                )
+            if intent.description:
+                selected_event.description = intent.description
+            if intent.location:
+                selected_event.location = intent.location
+
+            # Update the event
+            self.calendar_service.update_event(selected_event)
+
+            # Confirm the update
+            await event.respond(
+                f"✅ Updated: {selected_event.summary}\n"
+                f"Event has been successfully updated!"
+            )
+
+            # Reset user state
+            self.user_states[user_id] = {"state": "idle"}
+
+        except Exception as exc:
+            logger.error(f"Error handling update intent: {exc}")
+            await event.respond(
+                "Sorry, I couldn't update that event. Please try again."
             )
 
     async def _handle_fallback_intent(
