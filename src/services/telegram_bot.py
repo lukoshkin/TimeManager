@@ -1,7 +1,8 @@
 """Telegram bot service module for TimeManager."""
 
+from collections.abc import Callable
 import datetime
-from typing import Dict, List, TypedDict
+from typing import TypedDict
 
 from loguru import logger
 from telethon import TelegramClient, events
@@ -14,8 +15,8 @@ from src.services.intent_parser import (
     BaseIntent,
     CreateIntent,
     FallbackIntent,
-    ListIntent,
     LLMIntentParser,
+    ListIntent,
     UpdateIntent,
 )
 from src.services.time_slot_manager import (
@@ -30,7 +31,7 @@ class UserState(TypedDict, total=False):
     """TypedDict for storing user conversation states."""
 
     state: str
-    events: List[CalendarEvent]
+    events: list[CalendarEvent]
     selected_event: CalendarEvent
     intent: BaseIntent
 
@@ -45,8 +46,6 @@ class TelegramBot:
             settings.telegram_api_id,
             settings.telegram_api_hash,
         )
-
-        # Initialize services
         self.calendar_service = GoogleCalendarService(
             settings.google_credentials_file,
             settings.google_token_file,
@@ -59,11 +58,7 @@ class TelegramBot:
         self.semantic_search = EventSemanticSearch(
             model_name="all-MiniLM-L6-v2"
         )
-
-        # Store user states
-        self.user_states: Dict[int, UserState] = {}
-
-        # Register event handlers
+        self.user_states: dict[int, UserState] = {}
         self._register_handlers()
 
     def _format_event(
@@ -79,61 +74,60 @@ class TelegramBot:
             index: Optional index number for the event in a list
             include_number: Whether to include the index number in the format
 
-        Returns:
+        Returns
+        -------
             A formatted string representation of the event
         """
-        # Format the date and time
         start_time = event.start_time.strftime("%A, %B %d at %I:%M %p")
         end_time = event.end_time.strftime("%I:%M %p")
 
-        # Start building the response
-        if include_number and index is not None:
-            response = f"{index}. {event.summary}\n"
-        else:
-            response = f"{event.summary}\n"
-
-        response += f"   📅 {start_time} - {end_time}\n"
-
-        # Add location if available
+        response = [
+            f"{index}. {event.summary}\n"
+            if include_number and index is not None
+            else f"{event.summary}\n"
+        ]
+        response.append(f"   📅 {start_time} - {end_time}\n")
         if event.location:
-            response += f"   📍 {event.location}\n"
+            response.append(f"   📍 {event.location}\n")
 
-        # Add description if available (truncate if too long)
         if event.description:
             description = event.description
             if len(description) > 50:
                 description = description[:47] + "..."
-            response += f"   📝 {description}\n"
+            response.append(f"   📝 {description}\n")
 
-        # Add a blank line for spacing between events
-        response += "\n"
-
-        return response
+        response.append("\n")
+        return "".join(response)
 
     def _register_handlers(self) -> None:
         """Register event handlers for the bot."""
-        self.client.on(events.NewMessage(pattern="/start"))(
-            self._start_handler
+
+        def _register_handler(
+            pattern_or_func: str | Callable,
+            handler: Callable,
+        ) -> None:
+            """Register a handler for a specific command pattern."""
+            self.client.on(
+                events.NewMessage(
+                    **(
+                        {"pattern": pattern_or_func}
+                        if isinstance(pattern_or_func, str)
+                        else {"func": pattern_or_func}  # type: ignore[dict-item]
+                    )
+                )
+            )(handler)
+
+        _register_handler("/start", self._start_handler)
+        _register_handler("/help", self._help_handler)
+        _register_handler("/schedule", self._schedule_handler)
+        _register_handler("/update", self._update_handler)
+        _register_handler("/delete", self._delete_handler)
+        _register_handler("/cancel", self._cancel_handler)
+        _register_handler("/freeslots", self._freeslots_handler)
+        _register_handler(
+            lambda event: event.text.startswith("/"),
+            self._message_handler,
         )
-        self.client.on(events.NewMessage(pattern="/help"))(self._help_handler)
-        self.client.on(events.NewMessage(pattern="/schedule"))(
-            self._schedule_handler
-        )
-        self.client.on(events.NewMessage(pattern="/update"))(
-            self._update_handler
-        )
-        self.client.on(events.NewMessage(pattern="/delete"))(
-            self._delete_handler
-        )
-        self.client.on(events.NewMessage(pattern="/cancel"))(
-            self._cancel_handler
-        )
-        self.client.on(events.NewMessage(pattern="/freeslots"))(
-            self._freeslots_handler
-        )
-        self.client.on(
-            events.NewMessage(func=lambda e: not e.text.startswith("/"))
-        )(self._message_handler)
 
     async def _start_handler(self, event: NewMessage.Event) -> None:
         """Handle the /start command."""
@@ -308,7 +302,8 @@ class TelegramBot:
         }
 
         await event.respond(
-            "Looking for free time slots. By default, I'll look for 60-minute slots in the next 7 days.\n\n"
+            "Looking for free time slots. By default, I'll look for"
+            " 60-minute slots in the next 7 days.\n\n"
             "You can customize this by saying something like:\n"
             '- "Find 30 minute slots"\n'
             '- "Look for slots in the next 3 days"\n'
@@ -329,11 +324,15 @@ class TelegramBot:
 
             if not free_slots:
                 await event.respond(
-                    f"No free slots found in the next {days_ahead} days for {duration_minutes} minute events."
+                    f"No free slots found in the next {days_ahead} days for"
+                    f" {duration_minutes} minute events."
                 )
                 return
 
-            response = f"Available time slots for {duration_minutes} minute events:\n\n"
+            response = (
+                f"Available time slots for {duration_minutes} minute"
+                f" events:\n\n"
+            )
 
             # Group by date for better readability
             date_slots = {}
@@ -549,7 +548,8 @@ class TelegramBot:
 
                     if not free_slots:
                         await event.respond(
-                            f"No free slots found in the next {days_ahead} days for {duration_minutes} minute events."
+                            f"No free slots found in the next {days_ahead}"
+                            f" days for {duration_minutes} minute events."
                         )
                         # Reset user state
                         self.user_states[user_id] = {"state": "idle"}
@@ -622,9 +622,10 @@ class TelegramBot:
                 await self._handle_fallback_intent(event, intent)
             else:
                 await event.respond(
-                    "I'm not sure what you want to do. You can create an event, "
-                    "update an event with /update, delete an event with /delete, "
-                    "or view your schedule with /schedule."
+                    "I'm not sure what you want to do. You can create an"
+                    " event, update an event with /update, delete an"
+                    " event with /delete, or view your schedule with"
+                    " /schedule."
                 )
 
         except Exception as exc:
@@ -721,7 +722,8 @@ class TelegramBot:
 
             if not events:
                 await event.respond(
-                    f"You don't have any events scheduled between {start_date.date()} and {end_date.date()}."
+                    f"You don't have any events scheduled"
+                    f" between {start_date.date()} and {end_date.date()}."
                 )
                 return
 

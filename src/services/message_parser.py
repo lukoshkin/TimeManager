@@ -9,17 +9,25 @@ from src.services.time_slot_manager import EventRequest, RecurrenceFrequency
 class MessageParser:
     """Parser for extracting event information from user messages."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the message parser."""
-        # Common time expressions
         self.time_patterns = {
             "today": r"today",
             "tomorrow": r"tomorrow",
             "next week": r"next\s+week",
             "next month": r"next\s+month",
             "at time": r"at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?",
-            "from time to time": r"from\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+to\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?",
-            "on date": r"on\s+(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)",
+            "from time to time": (
+                r"from\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s+"
+                r"to\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"
+            ),
+            "on date": (
+                r"on\s+(\d{1,2})(?:st|nd|rd|th)?\s+"
+                r"(dec(?:ember)?|jan(?:uary)?|feb(?:ruary)?"
+                r"|mar(?:ch)?|apr(?:il)?|may"
+                r"|jun(?:e)?|jul(?:y)?|aug(?:ust)?"
+                r"|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?)"
+            ),
             "for duration": r"for\s+(\d+)\s+(minute(?:s)?|hour(?:s)?)",
             "recurrence": r"(every|each)\s+(day|week|month)",
             "recurrence count": r"(\d+)\s+times",

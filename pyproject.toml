@@ -45,32 +45,77 @@ timemanager = "src.main:main"
 packages = ["src"]
 
 [tool.ruff]
-# General settings
 line-length = 79
 target-version = "py310"
-# Select and extend rules
-select = ["E", "F", "I", "W"]                  # Error, Flake8, Isort, Warning
-extend-exclude = ["__pycache__", "*.egg_info"]
+extend-exclude = [
+  "*.ipynb",
+  "_*.py",
+  ".git",
+  "__pycache__",
+  ".venv",
+  ".eggs",
+  "*.egg",
+  "venv",
+  "*.md",
+  ".mypy_cache",
+  "build",
+  "dist",
+]
 
-[tool.ruff.format]
-# Black-compatible formatting
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-
-# Import sorting settings
 [tool.ruff.lint]
-isort = { known-first-party = ["src"], force-single-line = false }
+# Enable recommended set of rules:
+# E/F: pycodestyle and Pyflakes (default)
+# I: isort
+# B: flake8-bugbear
+# C4: flake8-comprehensions
+# D: pydocstyle
+# N: naming
+# UP: pyupgrade
+# S: flake8-bandit (security)
+# W: warnings
+select = ["E", "F", "I", "B", "C4", "D", "N", "UP", "S", "W"]
 
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+# # Common issues to ignore
+ignore = [
+  "E203", # Whitespace before ':' (conflicts with Black)
+  "E501", # Line too long (handled by formatter)
+  "D100", # Missing docstring in public module
+  "D107", # Missing docstring in __init__
+  "D203", # One blank line required before class docstring
+  "D213", # Multi-line docstring summary should start at the second line
+]
+
+# Allow autofix for all enabled rules (when using `--fix`)
+# fixable = ["ALL"]
+# unfixable = []
+
+# Allow unused variables when underscore-prefixed
+# dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# From setup.cfg flake8 per-file-ignores
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101", "S311"]      # Allow assert and pseudorandom in tests
+"test_*.py" = ["S101", "S311"]
+"exceptions.py" = ["N818"]           # Allow exception names that don't end with "Error"
+"lego/utils/profiling.py" = ["E741"] # Allow ambiguous variable names like 'l'
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+force-sort-within-sections = true
+combine-as-imports = true
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+allow_redefinition = true
