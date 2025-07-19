@@ -1,11 +1,13 @@
-"""Semantic search for events using sentence embeddings."""
+"""Semantic search for events using sentence embeddings.
 
-from typing import List, Optional, Tuple
+DEPRECATED: This module has been replaced by event_milvus_connector.py
+which provides better performance and persistence using Milvus vector database.
+"""
 
 import numpy as np
-from loguru import logger
 from sentence_transformers import SentenceTransformer, util
 
+from src.config.logging import logger
 from src.services.google_calendar import CalendarEvent
 
 
@@ -24,9 +26,9 @@ class EventSemanticSearch:
     def find_similar_event(
         self,
         query: str,
-        events: List[CalendarEvent],
+        events: list[CalendarEvent],
         threshold: float = 0.6,
-    ) -> Tuple[Optional[CalendarEvent], float]:
+    ) -> tuple[CalendarEvent | None, float]:
         """Find the most semantically similar event to the query.
 
         Args:
@@ -34,7 +36,8 @@ class EventSemanticSearch:
             events: List of calendar events to search
             threshold: Minimum similarity threshold (0-1) to consider a match
 
-        Returns:
+        Returns
+        -------
             A tuple of (matched_event, similarity_score) or (None, 0.0) if no match
         """
         if not events:

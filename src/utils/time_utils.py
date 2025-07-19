@@ -10,7 +10,8 @@ def time_aware_text(text: str, *args: str) -> str:
         text: The text template with {today} and {time} placeholders
         *args: Placeholder names that should be preserved for later formatting
 
-    Returns:
+    Returns
+    -------
         The formatted text with current date and time
     """
     now = datetime.now()

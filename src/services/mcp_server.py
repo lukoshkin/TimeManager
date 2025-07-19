@@ -3,9 +3,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
-from loguru import logger
 from mcp.server.fastmcp import FastMCP
 
+from src.config.logging import logger
 from src.config.settings import settings
 from src.services.google_calendar import GoogleCalendarService
 from src.services.time_slot_manager import (
@@ -65,7 +65,8 @@ class MCPServer:
             Args:
                 days: Number of days to look ahead
 
-            Returns:
+            Returns
+            -------
                 Formatted string with event information
 
             """
@@ -104,7 +105,8 @@ class MCPServer:
                 start_days: Days from now to start looking
                 end_days: Days from now to end looking
 
-            Returns:
+            Returns
+            -------
                 Formatted string with availability information
 
             """
@@ -171,7 +173,8 @@ class MCPServer:
             Args:
                 days: Number of days to look ahead
 
-            Returns:
+            Returns
+            -------
                 Formatted string with event information
 
             """
@@ -221,7 +224,8 @@ class MCPServer:
                 description: Event description
                 location: Event location
 
-            Returns:
+            Returns
+            -------
                 Confirmation message with event details
 
             """
@@ -308,7 +312,8 @@ class MCPServer:
                 description: Event description
                 location: Event location
 
-            Returns:
+            Returns
+            -------
                 Confirmation message with event details
 
             """
@@ -392,7 +397,8 @@ class MCPServer:
             Args:
                 event_id: The ID of the event to delete
 
-            Returns:
+            Returns
+            -------
                 Confirmation message
 
             """
@@ -443,7 +449,8 @@ class MCPServer:
                 description: New event description
                 location: New event location
 
-            Returns:
+            Returns
+            -------
                 Confirmation message with updated event details
 
             """
@@ -545,7 +552,8 @@ class MCPServer:
                 working_hours_start: Start of working hours (0-23)
                 working_hours_end: End of working hours (0-23)
 
-            Returns:
+            Returns
+            -------
                 Formatted string with available time slots
 
             """

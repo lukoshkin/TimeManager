@@ -1,8 +1,7 @@
 import datetime
 import re
 
-from loguru import logger
-
+from src.config.logging import logger
 from src.services.time_slot_manager import EventRequest, RecurrenceFrequency
 
 
@@ -39,7 +38,8 @@ class MessageParser:
         Args:
             message: The message to parse
 
-        Returns:
+        Returns
+        -------
             An EventRequest object with the extracted information
 
         """

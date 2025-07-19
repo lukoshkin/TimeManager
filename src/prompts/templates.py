@@ -58,4 +58,3 @@ SLOT_ELICITATION_PROMPTS = {
         "time_range_days": "For how many days would you like to see your schedule?",
     },
 }
-

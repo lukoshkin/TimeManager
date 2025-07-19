@@ -1,6 +1,5 @@
 import datetime
 import os.path
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -10,19 +9,20 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from loguru import logger
+from pydantic import BaseModel
+
+from src.config.logging import logger
 
 
-@dataclass
-class CalendarEvent:
+class CalendarEvent(BaseModel):
     """Represents a calendar event."""
 
     summary: str
+    event_id: str | None = None
     start_time: datetime.datetime
     end_time: datetime.datetime
     description: str | None = None
     location: str | None = None
-    event_id: str | None = None
     recurrence: list | None = None
 
 
@@ -56,19 +56,27 @@ class GoogleCalendarService:
                     scopes=self.SCOPES,
                 )
             except Exception as ex:
-                logger.error(f"Error loading credentials from token file: {ex}")
+                logger.error(
+                    f"Error loading credentials from token file: {ex}"
+                )
                 # If we can't load the credentials, we'll create new ones
                 credentials = None
                 # Delete the invalid token file
                 try:
                     os.remove(self.token_file)
-                    logger.info(f"Deleted invalid token file: {self.token_file}")
+                    logger.info(
+                        f"Deleted invalid token file: {self.token_file}"
+                    )
                 except OSError as ex:
                     logger.error(f"Error deleting token file: {ex}")
 
         # If there are no (valid) credentials available, let the user log in
         if not credentials or not credentials.valid:
-            if credentials and credentials.expired and credentials.refresh_token:
+            if (
+                credentials
+                and credentials.expired
+                and credentials.refresh_token
+            ):
                 try:
                     credentials.refresh(Request())
                 except Exception as ex:
@@ -85,7 +93,9 @@ class GoogleCalendarService:
                         logger.error(f"Error deleting token file: {ex}")
 
                     # Create new credentials
-                    logger.info("Starting new OAuth flow to get fresh credentials")
+                    logger.info(
+                        "Starting new OAuth flow to get fresh credentials"
+                    )
                     flow = InstalledAppFlow.from_client_secrets_file(
                         self.credentials_file,
                         self.SCOPES,
@@ -132,9 +142,9 @@ class GoogleCalendarService:
         Args:
             event: The event to create
 
-        Returns:
+        Returns
+        -------
             The ID of the created event
-
         """
         iana_tz = tzlocal.get_localzone_name()
         event_body = {
@@ -172,11 +182,7 @@ class GoogleCalendarService:
 
         Args:
             event: The event to update
-
         """
-        if not event.event_id:
-            raise ValueError("Event ID is required for updating an event")
-
         iana_tz = tzlocal.get_localzone_name()
         event_body = {
             "summary": event.summary,
@@ -237,7 +243,8 @@ class GoogleCalendarService:
             start_time: The start time of the range
             end_time: The end time of the range
 
-        Returns:
+        Returns
+        -------
             A list of events in the specified time range
 
         """
@@ -255,18 +262,15 @@ class GoogleCalendarService:
             )
 
             events = events_result.get("items", [])
-
             result = []
             for event in events:
                 start = event["start"].get("dateTime")
                 end = event["end"].get("dateTime")
 
                 if start and end:
-                    # Handle timezone consistently
                     try:
                         start_dt = datetime.datetime.fromisoformat(start)
                     except ValueError:
-                        # Handle 'Z' UTC timezone notation
                         start_dt = datetime.datetime.fromisoformat(
                             start.replace("Z", "+00:00"),
                         )
@@ -274,7 +278,6 @@ class GoogleCalendarService:
                     try:
                         end_dt = datetime.datetime.fromisoformat(end)
                     except ValueError:
-                        # Handle 'Z' UTC timezone notation
                         end_dt = datetime.datetime.fromisoformat(
                             end.replace("Z", "+00:00"),
                         )
@@ -310,7 +313,8 @@ class GoogleCalendarService:
             duration_minutes: The duration of the slot in minutes
             working_hours: Tuple of (start_hour, end_hour) for working hours
 
-        Returns:
+        Returns
+        -------
             A list of datetime objects representing the start times of free slots
 
         """
@@ -346,7 +350,9 @@ class GoogleCalendarService:
 
             # If current_date is already past working hours, move to next day
             if current_date.hour >= working_hours[1]:
-                current_date = (current_date + datetime.timedelta(days=1)).replace(
+                current_date = (
+                    current_date + datetime.timedelta(days=1)
+                ).replace(
                     hour=working_hours[0],
                     minute=0,
                     second=0,
@@ -393,7 +399,9 @@ class GoogleCalendarService:
                     current_date = slot_end
                 else:
                     # Move to next day if slot doesn't fit in current day
-                    current_date = (current_date + datetime.timedelta(days=1)).replace(
+                    current_date = (
+                        current_date + datetime.timedelta(days=1)
+                    ).replace(
                         hour=working_hours[0],
                         minute=0,
                         second=0,

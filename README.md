@@ -118,7 +118,7 @@ You can configure the application by modifying the `.env` file or setting enviro
 - `mcp_server_enabled` - Enable MCP server (true/false)
 - `mcp_server_host` - MCP server host (default: localhost)
 - `mcp_server_port` - MCP server port (default: 8000)
-- `log_level` - Logging level (default: INFO)
+- `log_level` - Logging level (default: DEBUG)
 
 ## Development
 

@@ -2,8 +2,7 @@ import datetime
 from dataclasses import dataclass
 from enum import Enum
 
-from loguru import logger
-
+from src.config.logging import logger
 from src.services.google_calendar import CalendarEvent, GoogleCalendarService
 
 
@@ -24,10 +23,12 @@ class RecurrenceFrequency(str, Enum):
         Args:
             value: The string value to convert
 
-        Returns:
+        Returns
+        -------
             The corresponding RecurrenceFrequency enum value
 
-        Raises:
+        Raises
+        ------
             ValueError: If the value cannot be converted
         """
         value_lower = value.lower().strip()
@@ -96,7 +97,8 @@ class TimeSlotManager:
         Args:
             request: The event request
 
-        Returns:
+        Returns
+        -------
             The ID of the created event
         """
         # If start and end times are provided, create the event directly
@@ -166,7 +168,8 @@ class TimeSlotManager:
         Args:
             request: The event request
 
-        Returns:
+        Returns
+        -------
             A list of created event IDs
 
         """

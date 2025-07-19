@@ -3,8 +3,8 @@
 import json
 
 import litellm
-from loguru import logger
 
+from src.config.logging import logger
 from src.prompts.templates import (
     FALLBACK_PROMPT,
     INTENT_CLASSIFICATION_PROMPT,
@@ -43,13 +43,20 @@ class LLMIntentParser:
     async def parse_intent(
         self,
         message: str,
-    ) -> CreateIntent | UpdateIntent | DeleteIntent | ListIntent | FallbackIntent:
+    ) -> (
+        CreateIntent
+        | UpdateIntent
+        | DeleteIntent
+        | ListIntent
+        | FallbackIntent
+    ):
         """Parse a user message to determine intent and extract slots.
 
         Args:
             message: User message text
 
-        Returns:
+        Returns
+        -------
             An intent object with extracted slots
 
         """
@@ -94,13 +101,13 @@ class LLMIntentParser:
         Args:
             message: User message text
 
-        Returns:
+        Returns
+        -------
             The classified intent type
         """
         prompt = time_aware_text(
-            INTENT_CLASSIFICATION_PROMPT, "message").format(
-            message=message
-        )
+            INTENT_CLASSIFICATION_PROMPT, "message"
+        ).format(message=message)
         try:
             response = await litellm.acompletion(
                 model=self.model,
@@ -142,16 +149,17 @@ class LLMIntentParser:
             intent_type: The classified intent type
             model_class: The pydantic model class to use for the intent
 
-        Returns:
+        Returns
+        -------
             An intent object with extracted slots
 
         """
         # Create a schema for the response format
         schema = model_class.model_json_schema()
 
-        prompt = time_aware_text(SLOT_EXTRACTION_PROMPT, "message", "schema").format(
-            message=message, schema=json.dumps(schema)
-        )
+        prompt = time_aware_text(
+            SLOT_EXTRACTION_PROMPT, "message", "schema"
+        ).format(message=message, schema=json.dumps(schema))
 
         try:
             response = await litellm.acompletion(
@@ -196,11 +204,14 @@ class LLMIntentParser:
         Args:
             message: User message text
 
-        Returns:
+        Returns
+        -------
             A FallbackIntent object with LLM response
 
         """
-        prompt = time_aware_text(FALLBACK_PROMPT, "message").format(message=message)
+        prompt = time_aware_text(FALLBACK_PROMPT, "message").format(
+            message=message
+        )
 
         try:
             response = await litellm.acompletion(
@@ -237,7 +248,8 @@ class LLMIntentParser:
             intent_type: The intent type
             slot_name: The name of the slot to elicit
 
-        Returns:
+        Returns
+        -------
             A prompt string to elicit the slot
 
         """
