@@ -246,23 +246,33 @@ class GoogleCalendarService:
         Returns
         -------
             A list of events in the specified time range
-
         """
         try:
+            if start_time.tzinfo is None:
+                local_tz = tzlocal.get_localzone()
+                start_time = start_time.replace(tzinfo=local_tz)
+            if end_time.tzinfo is None:
+                local_tz = tzlocal.get_localzone()
+                end_time = end_time.replace(tzinfo=local_tz)
+
+            # Convert to UTC for Google Calendar API
+            start_time_utc = start_time.astimezone(datetime.timezone.utc)
+            end_time_utc = end_time.astimezone(datetime.timezone.utc)
+
             events_result = (
                 self.service.events()
                 .list(
                     calendarId="primary",
-                    timeMin=start_time.isoformat() + "Z",
-                    timeMax=end_time.isoformat() + "Z",
+                    timeMin=start_time_utc.isoformat(),
+                    timeMax=end_time_utc.isoformat(),
                     singleEvents=True,
                     orderBy="startTime",
                 )
                 .execute()
             )
-
             events = events_result.get("items", [])
             result = []
+            ## TODO: explain the need of the loop below
             for event in events:
                 start = event["start"].get("dateTime")
                 end = event["end"].get("dateTime")
@@ -335,12 +345,6 @@ class GoogleCalendarService:
 
         while current_date < end_date:
             # Only consider working hours
-            work_day_start = current_date.replace(
-                hour=working_hours[0],
-                minute=0,
-                second=0,
-                microsecond=0,
-            )
             work_day_end = current_date.replace(
                 hour=working_hours[1],
                 minute=0,

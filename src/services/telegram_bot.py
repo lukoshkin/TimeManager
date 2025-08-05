@@ -212,33 +212,6 @@ class TelegramBot:
 
         return None
 
-    def _apply_update_to_event(
-        self, selected_event: CalendarEvent, intent: UpdateIntent
-    ) -> None:
-        """Apply updates from intent to selected event."""
-        if intent.summary:
-            selected_event.summary = intent.summary
-        if intent.start_time:
-            selected_event.start_time = intent.start_time
-            # Adjust end time to maintain duration if not specified
-            if not intent.duration_minutes:
-                duration = (
-                    selected_event.end_time - selected_event.start_time
-                ).total_seconds() / 60
-                selected_event.end_time = (
-                    selected_event.start_time
-                    + datetime.timedelta(minutes=int(duration))
-                )
-        if intent.duration_minutes:
-            selected_event.end_time = (
-                selected_event.start_time
-                + datetime.timedelta(minutes=intent.duration_minutes)
-            )
-        if intent.description:
-            selected_event.description = intent.description
-        if intent.location:
-            selected_event.location = intent.location
-
     def _log_milvus_debug_info(self, operation: str) -> None:
         """Log debug information about recent events in Milvus.
 
@@ -624,6 +597,13 @@ class TelegramBot:
             selected_event.location = intent.location
 
         self.calendar_service.update_event(selected_event)
+
+        try:
+            self.semantic_search.upsert_events([selected_event])
+            logger.info(f"Updated event in Milvus: {selected_event.summary}")
+        except Exception as exc:
+            logger.warning(f"Could not update event in Milvus: {exc}")
+
         self._log_milvus_debug_info("update")
 
     async def _handle_free_slots_customization(
@@ -738,13 +718,8 @@ class TelegramBot:
     ) -> None:
         """Handle general messages by parsing intent."""
         try:
-            # Parse the message to determine intent
             intent = await self.intent_parser.parse_intent(message)
-
-            # Log the intent type that was determined
-            logger.info(
-                f"Handling message with intent type: {intent.intent_type}"
-            )
+            logger.info(f"Handling message with intent: {intent}")
 
             if isinstance(intent, CreateIntent):
                 await self._handle_create_intent(event, intent)
@@ -902,10 +877,7 @@ class TelegramBot:
                 }
                 return
 
-            self._apply_update_to_event(selected_event, intent)
-            self.calendar_service.update_event(selected_event)
-            self._log_milvus_debug_info("update")
-
+            self._update_with_intent_data(selected_event, intent)
             self.user_states[user_id] = {"state": "idle"}
             await event.respond(
                 f"✅ Updated: {selected_event.summary}\n"
