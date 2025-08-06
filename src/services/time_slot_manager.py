@@ -101,7 +101,6 @@ class TimeSlotManager:
         -------
             The ID of the created event
         """
-        # If start and end times are provided, create the event directly
         if request.start_time and request.end_time:
             event = CalendarEvent(
                 summary=request.summary,
@@ -113,12 +112,10 @@ class TimeSlotManager:
 
             return self.calendar_service.create_event(event)
 
-        # If only start time is provided, calculate end time
         if request.start_time:
             end_time = request.start_time + datetime.timedelta(
                 minutes=request.duration_minutes,
             )
-
             event = CalendarEvent(
                 summary=request.summary,
                 start_time=request.start_time,
@@ -126,32 +123,24 @@ class TimeSlotManager:
                 description=request.description,
                 location=request.location,
             )
-
             return self.calendar_service.create_event(event)
 
-        # If no times are provided, find a suitable slot
-        # Default to scheduling within the next week
         start_date = datetime.datetime.now()
         end_date = start_date + datetime.timedelta(days=7)
-
         free_slots = self.calendar_service.find_free_slots(
             start_date,
             end_date,
             request.duration_minutes,
             self.working_hours,
         )
-
         if not free_slots:
             raise ValueError(
                 "No free slots available in the specified time range",
             )
-
-        # Use the first available slot
         start_time = free_slots[0]
         end_time = start_time + datetime.timedelta(
             minutes=request.duration_minutes,
         )
-
         event = CalendarEvent(
             summary=request.summary,
             start_time=start_time,
@@ -159,7 +148,6 @@ class TimeSlotManager:
             description=request.description,
             location=request.location,
         )
-
         return self.calendar_service.create_event(event)
 
     def schedule_recurring_event(self, request: EventRequest) -> list[str]:
@@ -180,17 +168,12 @@ class TimeSlotManager:
             raise ValueError("Invalid recurrence parameters")
 
         event_ids = []
-
-        # Schedule the first event
         first_event_id = self.schedule_event(request)
         event_ids.append(first_event_id)
-
-        # Get the scheduled event to use its time for recurring events
         events = self.calendar_service.get_events(
             datetime.datetime.now(),
             datetime.datetime.now() + datetime.timedelta(days=30),
         )
-
         first_event = next(
             (e for e in events if e.event_id == first_event_id),
             None,
@@ -200,12 +183,10 @@ class TimeSlotManager:
             logger.error("Could not find the first event")
             return event_ids
 
-        # Schedule recurring events
         current_start = first_event.start_time
         current_end = first_event.end_time
 
         for _ in range(1, request.recurrence_count):
-            # Calculate the next occurrence based on recurrence frequency
             if request.recurrence == RecurrenceFrequency.DAILY:
                 current_start += datetime.timedelta(days=1)
                 current_end += datetime.timedelta(days=1)
@@ -213,7 +194,6 @@ class TimeSlotManager:
                 current_start += datetime.timedelta(weeks=1)
                 current_end += datetime.timedelta(weeks=1)
             elif request.recurrence == RecurrenceFrequency.MONTHLY:
-                # Calculate the correct next month
                 if current_start.month == 12:
                     next_month = 1
                     next_year = current_start.year + 1
@@ -221,38 +201,29 @@ class TimeSlotManager:
                     next_month = current_start.month + 1
                     next_year = current_start.year
 
-                # Handle day overflow (e.g., Jan 31 -> Feb 28)
                 try:
                     current_start = current_start.replace(
                         year=next_year,
                         month=next_month,
                     )
-                    # Calculate the time difference to maintain the same duration
                     time_diff = current_end - current_start
                     current_end = current_start + time_diff
                 except ValueError:
-                    # Get the last day of the next month
                     if next_month == 12:
                         last_day = 31
                     else:
-                        # Use a better method to get the last day of month
                         if next_month + 1 > 12:
                             last_month_date = datetime.datetime(
-                                next_year + 1,
-                                1,
-                                1,
+                                next_year + 1, 1, 1
                             )
                         else:
                             last_month_date = datetime.datetime(
-                                next_year,
-                                next_month + 1,
-                                1,
+                                next_year, next_month + 1, 1
                             )
                         last_day = (
                             last_month_date - datetime.timedelta(days=1)
                         ).day
 
-                    # Preserve the time part when setting the date
                     old_hour, old_minute = (
                         current_start.hour,
                         current_start.minute,
@@ -271,13 +242,10 @@ class TimeSlotManager:
                         microsecond=old_microsecond,
                     )
 
-                    # Calculate the time difference to maintain the same duration
                     duration = (current_end - current_start).total_seconds()
                     current_end = current_start + datetime.timedelta(
                         seconds=duration,
                     )
-
-            # Create the recurring event
             event = CalendarEvent(
                 summary=first_event.summary,
                 start_time=current_start,
@@ -285,7 +253,6 @@ class TimeSlotManager:
                 description=first_event.description,
                 location=first_event.location,
             )
-
             event_id = self.calendar_service.create_event(event)
             event_ids.append(event_id)
 
