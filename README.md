@@ -115,7 +115,6 @@ You can configure the application by modifying the `.env` file or setting enviro
 - `telegram_bot_token` - Telegram bot token
 - `google_credentials_file` - Path to Google API credentials file
 - `google_token_file` - Path to Google API token file
-- `mcp_server_enabled` - Enable MCP server (true/false)
 - `mcp_server_host` - MCP server host (default: localhost)
 - `mcp_server_port` - MCP server port (default: 8000)
 - `log_level` - Logging level (default: DEBUG)

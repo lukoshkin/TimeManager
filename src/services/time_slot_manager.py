@@ -41,9 +41,7 @@ class RecurrenceFrequency(str, Enum):
             return cls.MONTHLY
         if value_lower in ("none", "no", "never"):
             return cls.NONE
-        valid_values = ", ".join(
-            [f"'{v}'" for v in cls._member_map_.values()],
-        )
+        valid_values = ", ".join([f"'{v.value}'" for v in cls])
         raise ValueError(
             f"Invalid recurrence frequency: '{value}'. "
             f"Valid values are: {valid_values}",
@@ -109,7 +107,6 @@ class TimeSlotManager:
                 description=request.description,
                 location=request.location,
             )
-
             return self.calendar_service.create_event(event)
 
         if request.start_time:

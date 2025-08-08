@@ -8,12 +8,8 @@ from telethon.events import NewMessage
 
 from src.config.env import settings
 from src.config.logging import logger
-from src.services.event_milvus_connector import (
-    EventMilvusConfig,
-    EventMilvusConnector,
-)
-from src.services.google_calendar import CalendarEvent, GoogleCalendarService
-from src.services.intent_parser import (
+from src.llm_solutions.base import BaseTelegramBot
+from src.llm_solutions.rigid_intent.intent_parser import (
     BaseIntent,
     CreateIntent,
     FallbackIntent,
@@ -21,6 +17,11 @@ from src.services.intent_parser import (
     ListIntent,
     UpdateIntent,
 )
+from src.services.event_milvus_connector import (
+    EventMilvusConfig,
+    EventMilvusConnector,
+)
+from src.services.google_calendar import CalendarEvent, GoogleCalendarService
 from src.services.time_slot_manager import (
     EventRequest,
     RecurrenceFrequency,
@@ -42,11 +43,17 @@ class UserState(TypedDict, total=False):
     intent: BaseIntent
 
 
-class TelegramBot:
-    """Telegram bot for time management."""
+class RigidTelegramBot(BaseTelegramBot):
+    """Rigid intent-based telegram bot for time management."""
 
     def __init__(self) -> None:
-        """Initialize the Telegram bot."""
+        """Initialize the Rigid Telegram bot."""
+        super().__init__()
+        self._initialize_services()
+        self._register_handlers()
+
+    def _initialize_services(self) -> None:
+        """Initialize bot services (calendar, time manager, etc.)."""
         self.client = TelegramClient(
             "time_manager_bot",
             settings.telegram_api_id,
@@ -76,7 +83,6 @@ class TelegramBot:
             logger.warning(f"Could not create Milvus collection: {exc}")
 
         self.user_states: dict[int, UserState] = {}
-        self._register_handlers()
 
     def _reset_user_state(self, user_id: int) -> None:
         """Reset user state to idle."""
