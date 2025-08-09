@@ -33,9 +33,7 @@ class LangChainReActTelegramBot(BaseTelegramBot):
         self.memory: MemorySaver
         self.agent_executor: CompiledStateGraph
 
-        config = get_llm_config()
-        self._semantic_config = config.semantic_search
-        self._model_config = config.llm_solution.langchain_react.model
+        self.cfg = get_llm_config()
         self._initialize_services()
         self._initialize_mcp_client()
         self._register_handlers()
@@ -50,10 +48,10 @@ class LangChainReActTelegramBot(BaseTelegramBot):
         try:
             milvus_config = EventMilvusConfig(
                 uri=settings.milvus_uri,
-                collection_name=self._semantic_config.collection_name,
-                vector_dim=self._semantic_config.vector_dim,
-                model_name=self._semantic_config.model_name,
-                embedding_provider=self._semantic_config.model_provider,
+                collection_name=self.cfg.semantic_search.collection_name,
+                vector_dim=self.cfg.semantic_search.vector_dim,
+                model_name=self.cfg.semantic_search.model_name,
+                embedding_provider=self.cfg.semantic_search.model_provider,
             )
             self.semantic_search = EventMilvusConnector(milvus_config)
             self.semantic_search.create_collection()
@@ -107,11 +105,11 @@ class LangChainReActTelegramBot(BaseTelegramBot):
         """Initialize the LangChain ReAct agent with MCP tools."""
         try:
             self.model = init_chat_model(
-                model=self._model_config.model,
+                model=self.cfg.model.name,
                 model_provider="openai",
-                api_key=settings.openai_api_key,
-                temperature=self._model_config.temperature,
-                max_tokens=self._model_config.max_tokens,
+                api_key=settings.chat_model_api_key,
+                temperature=self.cfg.model.temperature,
+                max_tokens=self.cfg.model.max_tokens,
             )
             self.tools = await self.mcp_client.get_tools()
             logger.info(f"Loaded {len(self.tools)} tools from MCP server")

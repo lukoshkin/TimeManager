@@ -30,10 +30,14 @@ class LangChainReActMemoryConfig(BaseModel):
     type: str = Field(default="memory_saver")
 
 
-class OpenAIModelConfig(BaseModel):
-    """OpenAI model configuration."""
+class ModelConfig(BaseModel):
+    """General model configuration."""
 
-    model: str = Field(default="gpt-4o", description="OpenAI model to use")
+    provider: str = Field(
+        default="openai",
+        description="Model provider (openai, anthropic, etc.)",
+    )
+    name: str = Field(default="gpt-4o", description="Model name")
     temperature: float = Field(default=0.1, description="Model temperature")
     max_tokens: int = Field(default=2000, description="Maximum tokens")
 
@@ -74,7 +78,6 @@ class LangChainReActConfig(BaseModel):
     description: str
     features: list[str]
     memory: LangChainReActMemoryConfig
-    model: OpenAIModelConfig = Field(default_factory=OpenAIModelConfig)
 
 
 class LLMSolutionConfig(BaseModel):
@@ -122,6 +125,10 @@ class LLMSolutionsConfig(BaseModel):
     llm_solution: LLMSolutionConfig
     deployment: DeploymentConfig
     dependencies: DependenciesConfig
+    model: ModelConfig = Field(
+        default_factory=ModelConfig,
+        description="Common model configuration",
+    )
     semantic_search: SemanticSearchConfig = Field(
         default_factory=SemanticSearchConfig
     )
@@ -140,12 +147,9 @@ class LLMSolutionsConfig(BaseModel):
         -------
             Loaded configuration
         """
-        if config_path is None:
-            # Default to root directory
-            config_path = Path("llm_solutions_config.yaml")
-        else:
-            config_path = Path(config_path)
-
+        config_path = Path(
+            "llm_solutions_config.yaml" if config_path is None else config_path
+        )
         if not config_path.exists():
             logger.warning(
                 f"Config file {config_path} not found. Using defaults."
@@ -173,6 +177,12 @@ class LLMSolutionsConfig(BaseModel):
             Default configuration
         """
         return cls(
+            model=ModelConfig(
+                provider="openai",
+                name="gpt-4o",
+                temperature=0.1,
+                max_tokens=2000,
+            ),
             llm_solution=LLMSolutionConfig(
                 type="langchain_react",
                 rigid_intent=RigidIntentConfig(
@@ -199,7 +209,6 @@ class LLMSolutionsConfig(BaseModel):
                     memory=LangChainReActMemoryConfig(
                         enabled=True, type="memory_saver"
                     ),
-                    model=OpenAIModelConfig(),
                 ),
             ),
             deployment=DeploymentConfig(environment="development"),

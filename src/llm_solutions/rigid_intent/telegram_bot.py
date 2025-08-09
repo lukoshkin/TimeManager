@@ -7,6 +7,7 @@ from telethon import TelegramClient, events
 from telethon.events import NewMessage
 
 from src.config.env import settings
+from src.config.llm_config import get_llm_config
 from src.config.logging import logger
 from src.llm_solutions.base import BaseTelegramBot
 from src.llm_solutions.rigid_intent.intent_parser import (
@@ -54,6 +55,7 @@ class RigidTelegramBot(BaseTelegramBot):
 
     def _initialize_services(self) -> None:
         """Initialize bot services (calendar, time manager, etc.)."""
+        cfg = get_llm_config()
         self.client = TelegramClient(
             "time_manager_bot",
             settings.telegram_api_id,
@@ -65,15 +67,15 @@ class RigidTelegramBot(BaseTelegramBot):
         )
         self.time_slot_manager = TimeSlotManager(self.calendar_service)
         self.intent_parser = LLMIntentParser(
-            api_key=settings.openai_api_key,
-            model=settings.openai_model,
+            api_key=settings.chat_model_api_key,
+            model=cfg.model.name,
         )
         milvus_config = EventMilvusConfig(
             uri=settings.milvus_uri,
-            collection_name=settings.milvus_collection_name,
-            vector_dim=settings.milvus_vector_dim,
-            model_name=settings.milvus_model_name,
-            embedding_provider=settings.milvus_model_provider,
+            collection_name=cfg.semantic_search.collection_name,
+            vector_dim=cfg.semantic_search.vector_dim,
+            model_name=cfg.semantic_search.model_name,
+            embedding_provider=cfg.semantic_search.model_provider,
         )
         self.semantic_search = EventMilvusConnector(milvus_config)
 
@@ -98,7 +100,8 @@ class RigidTelegramBot(BaseTelegramBot):
         """Handle errors consistently across all operations."""
         logger.error(f"Error in {operation}: {error}")
         await event.respond(
-            "Sorry, I encountered an error processing your request. Please try again."
+            "Sorry, I encountered an error processing your request."
+            " Please try again."
         )
         self._reset_user_state(user_id)
 
@@ -438,7 +441,8 @@ class RigidTelegramBot(BaseTelegramBot):
         except Exception as exc:
             logger.error(f"Error finding free slots: {exc}")
             await event.respond(
-                "Sorry, I couldn't find free time slots. Please try again later."
+                "Sorry, I couldn't find free time slots."
+                " Please try again later."
             )
             return
 
@@ -714,7 +718,8 @@ class RigidTelegramBot(BaseTelegramBot):
                 f"Error in message handler for state '{state}': {exc}"
             )
             await event.respond(
-                "Sorry, I encountered an error processing your request. Please try again."
+                "Sorry, I encountered an error processing your request."
+                " Please try again."
             )
             # Reset user state on error
             self.user_states[user_id] = {"state": "idle"}
@@ -746,7 +751,8 @@ class RigidTelegramBot(BaseTelegramBot):
         except Exception as exc:
             logger.error(f"Error handling message: {exc}")
             await event.respond(
-                "Sorry, I encountered an error processing your request. Please try again."
+                "Sorry, I encountered an error processing your request."
+                " Please try again."
             )
 
     async def _handle_create_intent(
@@ -814,7 +820,6 @@ class RigidTelegramBot(BaseTelegramBot):
         try:
             days = intent.time_range_days or DEFAULT_DAYS_AHEAD
             now = datetime.datetime.now()
-            logger.debug(f"Current time: {now}")
             if intent.start_date:
                 start_date = intent.start_date
             else:

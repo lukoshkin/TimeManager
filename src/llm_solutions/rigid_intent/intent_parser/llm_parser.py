@@ -22,18 +22,18 @@ from src.services.intent_parser.intent_models import (
 )
 from src.utils.time_utils import time_aware_text
 
-TRUNC_LEN = 50
-
 
 class LLMIntentParser:
     """Parser that uses LLM to extract intents and slots from user messages."""
 
-    def __init__(self, api_key: str, model: str = "gpt-4o"):
+    TRUNC_LEN = 50
+
+    def __init__(self, api_key: str, model: str):
         """Initialize the LLM Intent Parser.
 
         Args:
-            api_key: OpenAI API key
-            model: LLM model to use (default: gpt-4o)
+            api_key: API key of the LLM in use
+            model: LLM model to use
 
         """
         self.api_key = api_key
@@ -119,8 +119,8 @@ class LLMIntentParser:
             for intent_type in IntentType:
                 if intent_type.value in intent_text:
                     truncated_msg = (
-                        message[:TRUNC_LEN] + "..."
-                        if len(message) > TRUNC_LEN
+                        message[:self.TRUNC_LEN] + "..."
+                        if len(message) > self.TRUNC_LEN
                         else message
                     )
                     logger.info(

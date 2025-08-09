@@ -112,7 +112,7 @@ class EventMilvusConnector:
             field_name="event_id",
             datatype=DataType.VARCHAR,
             is_primary=True,
-            max_length=100,
+            max_length=200,
         )
         schema.add_field(
             field_name="summary",

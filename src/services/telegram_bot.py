@@ -808,7 +808,6 @@ class TelegramBot:
         try:
             days = intent.time_range_days or DEFAULT_DAYS_AHEAD
             now = datetime.datetime.now()
-            logger.debug(f"Current time: {now}")
             if intent.start_date:
                 start_date = intent.start_date
             else:
